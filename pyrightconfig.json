@@ -1,0 +1,9 @@
+{
+  "include": ["rvm_analysis", "notebooks"],
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": ["."]
+    }
+  ]
+}
