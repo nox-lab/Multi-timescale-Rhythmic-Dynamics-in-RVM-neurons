@@ -1,0 +1,13 @@
+{"POST_EVENT_PERIOD": 100,
+ "PRE_EVENT_PERIOD": -10,
+ "SKIP": 1,
+ "DRAWS": 1000,
+ "TUNE": 1000,
+ "BIN_SIZE": 0.05,
+ "PRIORS": {"SIGMA_B": 4,
+  "SIGMA_A": 4,
+  "T_LOWER": -4,
+  "T_UPPER": 20,
+  "K": 1,
+  "K2": 1,
+  "K3": 1}}

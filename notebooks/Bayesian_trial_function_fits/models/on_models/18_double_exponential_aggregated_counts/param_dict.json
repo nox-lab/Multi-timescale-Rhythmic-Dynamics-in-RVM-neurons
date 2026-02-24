@@ -1,0 +1,26 @@
+{
+    "POST_EVENT_PERIOD": 100,
+    "PRE_EVENT_PERIOD": -10,
+    "SKIP": 1,
+    "DRAWS": 1000,
+    "TUNE": 1000,
+    "BIN_SIZE": 0.05,
+    "PRIORS": {
+        "T_LOWER": -4,
+        "T_UPPER": 4,
+        "SIGMA_BASE_RATE": 5,
+        "LOG_BASE_RATE_PRE": {
+            "MU": 3,
+            "SIGMA": 1
+        },
+        "LOG_BASE_RATE_POST": {
+            "MU": 3,
+            "SIGMA": 1
+        },
+        "LOG_K_PRE": {
+            "MU": 1,
+            "SIGMA": 1
+        }
+    }
+
+}
