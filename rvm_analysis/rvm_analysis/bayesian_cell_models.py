@@ -384,6 +384,82 @@ def build_double_exponential_off_model(X_data,Y_data,p):
         return off_model
 
 
+
+def build_erf_off_model(X_data,Y_data,p):
+    with pm.Model() as off_model:
+
+        X = pm.MutableData("X", X_data)
+
+        # Priors
+        erfoffset = pm.HalfNormal("erfoffset", sigma=10)
+        erfscale = pm.HalfNormal("erfscale",10)
+        erfslope = pm.HalfNormal("erfslope",4)
+        k2 = pm.Normal("log_k2", mu=p["PRIORS"]["K2"]["MU"],sigma=p["PRIORS"]["K2"]["SIGMA"])       # Steepness
+        k3 = pm.Normal("log_k3", mu=p["PRIORS"]["K3"]["MU"],sigma=p["PRIORS"]["K3"]["SIGMA"])       # Steepness
+        t = pm.Uniform("t_switch", lower=-4,upper=4)
+        u0 = pm.Uniform("u0", lower=erfoffset, upper=erfoffset+2*erfscale)
+        c = pm.Deterministic("c",u0+pm.HalfNormal("c_bar", sigma=p["PRIORS"]["SIGMA_A"]))   # Final asymptote
+        d = pm.Deterministic("d",u0+pm.HalfNormal("d_bar", sigma=p["PRIORS"]["SIGMA_A"]))   # Final asymptote
+
+        # Calculate x0 to ensure sigmoid passes through (t, u0)
+        # x0 = t - (1 / pmmath.exp(k)) * pmmath.log((a - b) / (u0 - b) - 1) 
+        x0 = t - pmmath.erfinv(1 - (u0 - erfoffset) / erfscale) / erfslope
+        #x0  = τ=t0​−k1​erf−1(1+k1​k2​−u0​​)
+        # Left side: decreasing sigmoid
+        # sigmoid_part = b + (a - b) / (1 + pmmath.exp(pmmath.exp(k) * (X - x0)))
+
+        erf = erfoffset + erfscale * (1- pmmath.erf(erfslope*(X-x0)))
+
+        # Right side: exponentials increasing to (c-u0) + (d-u0) = c + d - 2u0
+        exp_part_1 = (c - u0) * (1 - pmmath.exp(-pmmath.exp(k2) * (X - t)))
+        exp_part_2 = (d - u0) * (1 - pmmath.exp(-pmmath.exp(k3) * (X - t)))
+
+        # Piecewise function
+        rate = pm.Deterministic("rate",pmmath.switch(X < t, erf, u0 + exp_part_1+exp_part_2))
+
+        # Observation model
+        obs = pm.Poisson('obs', mu=rate, observed=Y_data)
+        return off_model
+
+def build_linear_erf_off_model(X_data,Y_data,p):
+    with pm.Model() as off_model:
+
+        X = pm.MutableData("X", X_data)
+
+        # Priors
+        erfoffset = pm.HalfNormal("erfoffset", sigma=10)
+        erfscale = pm.HalfNormal("erfscale",10)
+        erfslope = pm.HalfNormal("erfslope",4)
+        k2 = pm.Normal("log_k2", mu=p["PRIORS"]["K2"]["MU"],sigma=p["PRIORS"]["K2"]["SIGMA"])       # Steepness
+        k3 = pm.HalfNormal("k3", sigma=p["PRIORS"]["K3"])  
+        t = pm.Uniform("t_switch", lower=-4,upper=4)
+        u0 = pm.Uniform("u0", lower=erfoffset, upper=erfoffset+2*erfscale)
+        c = pm.Deterministic("c",u0+pm.HalfNormal("c_bar", sigma=p["PRIORS"]["SIGMA_A"]))   # Final asymptote
+        # d = pm.Deterministic("d",u0+pm.HalfNormal("d_bar", sigma=p["PRIORS"]["SIGMA_A"]))   # Final asymptote
+
+        # Calculate x0 to ensure sigmoid passes through (t, u0)
+        # x0 = t - (1 / pmmath.exp(k)) * pmmath.log((a - b) / (u0 - b) - 1) 
+        x0 = t - pmmath.erfinv(1 - (u0 - erfoffset) / erfscale) / erfslope
+        #x0  = τ=t0​−k1​erf−1(1+k1​k2​−u0​​)
+        # Left side: decreasing sigmoid
+        # sigmoid_part = b + (a - b) / (1 + pmmath.exp(pmmath.exp(k) * (X - x0)))
+
+        erf = erfoffset + erfscale * (1- pmmath.erf(erfslope*(X-x0)))
+
+        # Right side: exponentials increasing to (c-u0) + (d-u0) = c + d - 2u0
+        exp_part_1 = (c - u0) * (1 - pmmath.exp(-pmmath.exp(k2) * (X - t)))
+
+        exp_part = u0 + exp_part_1 + k3 * (X-t)
+
+
+        # Piecewise function
+        rate = pm.Deterministic("rate",pmmath.switch(X < t, erf, exp_part))
+
+        # Observation model
+        obs = pm.Poisson('obs', mu=rate, observed=Y_data)
+        return off_model
+
+
 def calculate_rate_percentages_of_peak(ds,times=None,percentages=[0.1,0.5,0.9],cell_type='ON'):
     """
     Calculates the location and value of percentages of the relevant base rate (pre or post withdrawal
@@ -706,7 +782,11 @@ def compute_and_save_log_likelihood(model,idata,save_path,recompute=False):
     """
     if recompute:
         with model:
-            pm.compute_log_likelihood(idata)
+            try:
+                pm.compute_log_likelihood(idata)
+            except Exception as e:
+                print(e)
+
             idata_save = idata.copy()
             idata_save.to_netcdf(save_path)
             on_model_loo = az.loo(idata)
