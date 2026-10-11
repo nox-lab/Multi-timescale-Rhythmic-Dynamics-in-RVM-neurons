@@ -397,7 +397,7 @@ def get_empirical_nlpds(cell_data, discrete=True, plot=False):
     return nlpds
 
 
-def bin_spikes_and_split(cut_spikes, bin_width, cut_time,end_time=None):
+def bin_spikes_and_split(cut_spikes, bin_width, cut_time,end_time=None,test_length = None):
     """
     Takes a list of cut spikes and generates a test and training dataset of binned
     spike trains, suitable for modelling using a poisson likelihood. 
@@ -417,7 +417,10 @@ def bin_spikes_and_split(cut_spikes, bin_width, cut_time,end_time=None):
     train_spikes: BinnedSpikeTrain = binned_spikes.time_slice(
         0 * s, cut_time, copy=True
     )
-    test_spikes = binned_spikes.time_slice(cut_time, t_stop, copy=True)
+    if test_length:
+        test_spikes = binned_spikes.time_slice(cut_time, cut_time + test_length, copy=True)
+    else:
+        test_spikes = binned_spikes.time_slice(cut_time, t_stop, copy=True)
 
     return (
         train_spikes.to_array(),
