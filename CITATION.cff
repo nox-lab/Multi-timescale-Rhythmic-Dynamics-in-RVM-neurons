@@ -1,0 +1,11 @@
+cff-version: 1.0.1
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: Ashworth
+  given-names: Carl
+orcid: https://orcid.org/0009-0003-3532-0274
+title: Multi-timescale-Rhythmic-Dynamics-in-RVM-neurons
+version: v1.0.1
+date-released: 2026-06-03
+doi: 10.5281/zenodo.20528905
+url: "https://github.com/nox-lab/Multi-timescale-Rhythmic-Dynamics-in-RVM-neurons"
